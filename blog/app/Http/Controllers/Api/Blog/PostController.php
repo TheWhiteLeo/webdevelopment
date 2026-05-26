@@ -12,9 +12,7 @@ class PostController extends BaseController
      */
     public function index()
     {
-        $items = BlogPost::all();
-
-        return $items;
+        return BlogPost::paginate(10);
     }
 
     /**
@@ -22,7 +20,34 @@ class PostController extends BaseController
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->all();
+
+        if (empty($data["slug"]) && !empty($data["title"])) {
+            $data["slug"] = Str::slug($data["title"]);
+        }
+
+        if (isset($data["content_raw"]) && empty($data["content_html"])) {
+            $data["content_html"] = $data["content_raw"];
+        }
+
+        if (isset($data["is_published"]) && $data["is_published"] && empty($data["published_at"])) {
+            $data["published_at"] = now();
+        }
+
+        $item = BlogPost::create($data);
+
+        if ($item) {
+            return [
+                "success" => true,
+                "message" => "Пост успішно створено",
+                "id"      => $item->id
+            ];
+        } else {
+            return [
+                "success" => false,
+                "message" => "Помилка збереження поста"
+            ];
+        }
     }
 
     /**
@@ -30,7 +55,13 @@ class PostController extends BaseController
      */
     public function show(string $id)
     {
-        //
+        $item = BlogPost::find($id);
+
+        if (empty($item)) {
+            return ["message" => "Пост id=[{$id}] не знайдено"];
+        }
+
+        return $item;
     }
 
     /**
@@ -38,7 +69,39 @@ class PostController extends BaseController
      */
     public function update(Request $request, string $id)
     {
-        //
+        $item = BlogPost::find($id);
+
+        if (empty($item)) {
+            return ["message" => "Пост id=[{$id}] не знайдено"];
+        }
+
+        $data = $request->all();
+
+        if (empty($data["slug"]) && !empty($data["title"])) {
+            $data["slug"] = Str::slug($data["title"]);
+        }
+
+        if (isset($data["content_raw"]) && empty($data["content_html"])) {
+            $data["content_html"] = $data["content_raw"];
+        }
+
+        if (isset($data["is_published"]) && $data["is_published"] && empty($data["published_at"])) {
+            $data["published_at"] = now();
+        }
+
+        $result = $item->update($data);
+
+        if ($result) {
+            return [
+                "success" => true,
+                "message" => "Пост успішно збережено"
+            ];
+        } else {
+            return [
+                "success" => false,
+                "message" => "Помилка збереження поста"
+            ];
+        }
     }
 
     /**
@@ -46,6 +109,24 @@ class PostController extends BaseController
      */
     public function destroy(string $id)
     {
-        //
+        $item = BlogPost::find($id);
+
+        if (empty($item)) {
+            return ["message" => "Пост id=[{$id}] не знайдено"];
+        }
+
+        $result = $item->delete();
+
+        if ($result) {
+            return [
+                "success" => true,
+                "message" => "Пост успішно видалено"
+            ];
+        } else {
+            return [
+                "success" => false,
+                "message" => "Помилка видалення поста"
+            ];
+        }
     }
 }
