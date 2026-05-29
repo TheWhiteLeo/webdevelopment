@@ -32,7 +32,8 @@ class CategoryController extends BaseController
         if ($item) {
             return [
                 "success" => true,
-                "message" => "Успішно створено"
+                "message" => "Успішно створено",
+                "data" => $item
             ];
         } else {
             return [
@@ -50,7 +51,10 @@ class CategoryController extends BaseController
         $item = BlogCategory::find($id);
 
         if (empty($item)) {
-            return ["message" => "Запис id=[{$id}] не знайдено"];
+            return [
+                "success" => false,
+                "message" => "Запис id=[{$id}] не знайдено"
+            ];
         }
 
         return $item;
@@ -62,8 +66,11 @@ class CategoryController extends BaseController
     public function update(Request $request, string $id)
     {
         $item = BlogCategory::find($id);
-        if (empty($item)) { //якщо ід не знайдено
-            return ["message" => "Запис id=[{$id}] не знайдено"];
+        if (empty($item)) {
+            return [
+                "success" => false,
+                "message" => "Запис id=[{$id}] не знайдено"
+            ];
         }
 
         $data = $request->all();
@@ -76,7 +83,8 @@ class CategoryController extends BaseController
         if ($result) {
             return [
                 "success" => true,
-                "message" => "Успішно збережено"
+                "message" => "Успішно збережено",
+                "data" => $item
             ];
         } else {
             return [
