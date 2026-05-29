@@ -6,15 +6,21 @@ use App\Models\BlogCategory;
 use Illuminate\Support\Str;
 use App\Http\Requests\BlogCategoryCreateRequest;
 use App\Http\Requests\BlogCategoryUpdateRequest;
+use App\Repositories\BlogCategoryRepository;
 
 class CategoryController extends BaseController
 {
+    public function __construct(private BlogCategoryRepository $blogCategoryRepository)
+    {
+        //parent::__construct();
+
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return BlogCategory::paginate(5);
+        return $this->blogCategoryRepository->getAllWithPaginate(5);
     }
 
     /**
@@ -66,7 +72,7 @@ class CategoryController extends BaseController
      */
     public function update(BlogCategoryUpdateRequest $request, string $id)
     {
-        $item = BlogCategory::find($id);
+        $item = $this->blogCategoryRepository->getEdit($id);
         if (empty($item)) {
             return [
                 "success" => false,
