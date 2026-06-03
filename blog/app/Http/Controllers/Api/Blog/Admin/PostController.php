@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers\Api\Blog\Admin;
 
+use App\Models\BlogCategory;
 use App\Models\BlogPost;
+
+use App\Http\Requests\BlogPostCreateRequest;
+
 use App\Repositories\BlogCategoryRepository;
 use App\Http\Requests\BlogPostUpdateRequest;
 use App\Repositories\BlogPostRepository;
@@ -28,29 +32,17 @@ class PostController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(BlogPostCreateRequest  $request)
     {
-        $data = $request->all();
+        $data = $request->input(); //отримаємо масив даних, які надійшли з форми
 
-        if (empty($data["slug"]) && !empty($data["title"])) {
-            $data["slug"] = Str::slug($data["title"]);
-        }
-
-        if (isset($data["content_raw"]) && empty($data["content_html"])) {
-            $data["content_html"] = $data["content_raw"];
-        }
-
-        if (isset($data["is_published"]) && $data["is_published"] && empty($data["published_at"])) {
-            $data["published_at"] = now();
-        }
-
-        $item = BlogPost::create($data);
+        $item = BlogPost::create($data); //створюємо об'єкт і додаємо в БД
 
         if ($item) {
             return [
                 "success" => true,
                 "message" => "Пост успішно створено",
-                "id"      => $item->id
+                "item" => $item
             ];
         } else {
             return [
@@ -107,13 +99,9 @@ class PostController extends BaseController
      */
     public function destroy(string $id)
     {
-        $item = BlogPost::find($id);
+        $result = BlogPost::destroy($id); //софт деліт, запис лишається
 
-        if (empty($item)) {
-            return ["message" => "Пост id=[{$id}] не знайдено"];
-        }
-
-        $result = $item->delete();
+        //$result = BlogPost::find($id)->forceDelete(); //повне видалення з БД
 
         if ($result) {
             return [
