@@ -2,12 +2,18 @@
 
 use App\Http\Controllers\Api\Blog\Admin\CategoryController;
 use App\Http\Controllers\Api\Blog\Admin\PostController;
+use App\Http\Controllers\Api\Blog\PostController as BlogPostController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::group([ 'namespace' => 'App\Http\Controllers\Api\Blog', 'prefix' => 'blog'], function () {
+    Route::apiResource('posts', BlogPostController::class)
+        ->names('blog.posts');
+});
 
 $groupData = [
     'namespace' => 'App\Http\Controllers\Api\Blog\Admin',
