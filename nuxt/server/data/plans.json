@@ -1,0 +1,62 @@
+[
+  {
+    "id": 0,
+    "name": "Starter",
+    "monthlyPrice": "99.00",
+    "annualPriceMonth": "83.25",
+    "originalYearlyTotal": "1,188",
+    "annualPriceTotal": "999",
+    "savings": "$189",
+    "features": [
+      { "text": "Primary user only", "subtext": "(extra team members for $35/month)" },
+      { "text": "Save unlimited properties", "subtext": "" },
+      { "text": "<strong>10,000</strong> exports", "subtext": "(additional exports at $0.02 each)" },
+      { "text": "<strong>500</strong> free skip traces", "subtext": "(additional skip tracing at $0.08 each)" },
+      { "text": "Imports $0.01", "subtext": "" },
+      { "text": "<strong>FREE</strong> daily product trainings and support", "subtext": "" },
+      { "text": "Full suite of next-gen investing tools", "subtext": "" },
+      { "text": "Industry first AI powered comp tool", "subtext": "" },
+      { "text": "Includes dedicated support agent", "subtext": "" }
+    ]
+  },
+  {
+    "id": 1,
+    "name": "Team",
+    "monthlyPrice": "249.00",
+    "annualPriceMonth": "207.50",
+    "originalYearlyTotal": "2,988",
+    "annualPriceTotal": "2,490",
+    "savings": "$498",
+    "features": [
+      { "text": "Primary user only + 2 free team members", "subtext": "(extra team members for $25/month)" },
+      { "text": "Save unlimited properties", "subtext": "" },
+      { "text": "<strong>50,000</strong> exports", "subtext": "(additional exports at $0.01 each)" },
+      { "text": "<strong>1000</strong> free skip traces", "subtext": "(additional skip tracing at $0.08 each)" },
+      { "text": "Imports $0.01", "subtext": "" },
+      { "text": "<strong>FREE</strong> daily product trainings and support", "subtext": "" },
+      { "text": "Full suite of next-gen investing tools", "subtext": "" },
+      { "text": "Industry first AI powered comp tool", "subtext": "" },
+      { "text": "Includes dedicated support agent", "subtext": "" }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Business",
+    "monthlyPrice": "549.00",
+    "annualPriceMonth": "457.50",
+    "originalYearlyTotal": "6,588",
+    "annualPriceTotal": "5,490",
+    "savings": "$1,098",
+    "features": [
+      { "text": "Primary user only + 6 free team members", "subtext": "(extra team members for $35/month)" },
+      { "text": "Save unlimited properties", "subtext": "" },
+      { "text": "<strong>100,000</strong> exports", "subtext": "(additional exports at $0.01 each)" },
+      { "text": "<strong>2000</strong> free skip traces", "subtext": "(additional skip tracing at $0.08 each)" },
+      { "text": "Imports $0.01", "subtext": "" },
+      { "text": "<strong>FREE</strong> daily product trainings and support", "subtext": "" },
+      { "text": "Full suite of next-gen investing tools", "subtext": "" },
+      { "text": "Industry first AI powered comp tool", "subtext": "" },
+      { "text": "Includes dedicated support agent", "subtext": "" }
+    ]
+  }
+]

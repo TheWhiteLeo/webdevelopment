@@ -19,9 +19,11 @@ class PostController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return $this->blogPostRepository->getAllWithPaginate();
+        $filters = $request->only(['search', 'sort_by', 'sort_dir', 'per_page']);
+
+        return $this->blogPostRepository->getAllWithPaginate($filters);
     }
 
     /**
@@ -37,7 +39,7 @@ class PostController extends BaseController
      */
     public function show(string $id)
     {
-        //
+        return $this->blogPostRepository->getOne($id);
     }
 
     /**
