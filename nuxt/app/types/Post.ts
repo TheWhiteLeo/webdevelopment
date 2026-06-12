@@ -9,6 +9,8 @@ export type Post = {
   published_at: string | null
   user_id: string
   category_id: string
+  content_raw: string
+  content_html: string
   category: Category
   user: User
 }
