@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api\Blog\Admin;
 
 use App\Models\BlogPost;
-
+use App\Http\Resources\Api\Blog\Admin\PostResource;
 use App\Http\Requests\BlogPostCreateRequest;
+use App\Http\Requests\BlogPostUpdateRequest;
 use App\Jobs\BlogPostAfterCreateJob;
 use App\Jobs\BlogPostAfterDeleteJob;
 use App\Repositories\BlogCategoryRepository;
-use App\Http\Requests\BlogPostUpdateRequest;
 use App\Repositories\BlogPostRepository;
 
 
@@ -25,7 +25,11 @@ class PostController extends BaseController
      */
     public function index()
     {
-        return $this->blogPostRepository->getAllWithPaginate();
+        // Отримуємо пагіновані дані з репозиторія
+        $paginator = $this->blogPostRepository->getAllWithPaginate();
+
+        // Обгортаємо пагінацію в API Ресурс
+        return PostResource::collection($paginator);
     }
 
     /**

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\Blog\Admin;
 
+use App\Http\Resources\Api\Blog\Admin\CategoryResource;
 use App\Models\BlogCategory;
-use Illuminate\Support\Str;
 use App\Http\Requests\BlogCategoryCreateRequest;
 use App\Http\Requests\BlogCategoryUpdateRequest;
 use App\Repositories\BlogCategoryRepository;
@@ -20,7 +20,9 @@ class CategoryController extends BaseController
      */
     public function index()
     {
-        return $this->blogCategoryRepository->getAllWithPaginate(5);
+        $paginator = $this->blogCategoryRepository->getAllWithPaginate(5);
+
+        return  CategoryResource::collection($paginator);
     }
 
     /**
