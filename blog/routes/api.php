@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Blog\Admin\CategoryController;
 use App\Http\Controllers\Api\Blog\Admin\PostController;
+use App\Http\Controllers\Api\Blog\Admin\UserController;
 use App\Http\Controllers\Api\Blog\PostController as BlogPostController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -21,11 +22,15 @@ $groupData = [
 ];
 Route::group($groupData, function () {
     //BlogCategory
-    $methods = ['index','store','update',];
+    $methods = ['index','store', 'show', 'update', 'destroy'];
     Route::apiResource('categories', CategoryController::class)
         ->only($methods)
         ->names('blog.admin.categories');
 
     Route::apiResource('posts', PostController::class)
         ->names('blog.admin.posts');
+
+    Route::apiResource('users', UserController::class)
+        ->only(['index'])
+        ->names('blog.admin.users');
 });

@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers\Api\Blog;
 
-use App\Models\BlogPost;
-use App\Repositories\BlogCategoryRepository;
+use App\Http\Resources\Api\Blog\Admin\PostIndexResource;
+use App\Http\Resources\Api\Blog\Admin\PostResource;
 use App\Repositories\BlogPostRepository;
 use Illuminate\Http\Request;
 
 class PostController extends BaseController
 {
     public function __construct(
-        private BlogPostRepository $blogPostRepository,
-        private BlogCategoryRepository $blogCategoryRepository)
+        private BlogPostRepository $blogPostRepository)
     {
         //parent::__construct();
     }
@@ -23,7 +22,9 @@ class PostController extends BaseController
     {
         $filters = $request->only(['search', 'sort_by', 'sort_dir', 'per_page']);
 
-        return $this->blogPostRepository->getAllWithPaginate($filters);
+        $paginator = $this->blogPostRepository->getAllWithPaginate($filters);
+
+        return PostIndexResource::collection($paginator);
     }
 
     /**
@@ -39,7 +40,9 @@ class PostController extends BaseController
      */
     public function show(string $id)
     {
-        return $this->blogPostRepository->getOne($id);
+        $post = $this->blogPostRepository->getOne($id);
+
+        return new PostResource($post);
     }
 
     /**

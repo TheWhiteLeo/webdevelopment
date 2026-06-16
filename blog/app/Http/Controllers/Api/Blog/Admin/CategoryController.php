@@ -6,7 +6,9 @@ use App\Http\Resources\Api\Blog\Admin\CategoryResource;
 use App\Models\BlogCategory;
 use App\Http\Requests\BlogCategoryCreateRequest;
 use App\Http\Requests\BlogCategoryUpdateRequest;
+use App\Models\BlogPost;
 use App\Repositories\BlogCategoryRepository;
+use Illuminate\Http\Request;
 
 class CategoryController extends BaseController
 {
@@ -18,11 +20,18 @@ class CategoryController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $paginator = $this->blogCategoryRepository->getAllWithPaginate(5);
+        $filters = $request->only(['nopaginate']);
+        if ($filters['nopaginate']) {
+            $categories = $this->blogCategoryRepository->getForComboBox();
 
-        return  CategoryResource::collection($paginator);
+            return CategoryResource::collection($categories);
+        } else {
+            $paginator = $this->blogCategoryRepository->getAllWithPaginate(5);
+
+            return  CategoryResource::collection($paginator);
+        }
     }
 
     /**
@@ -38,7 +47,7 @@ class CategoryController extends BaseController
             return [
                 "success" => true,
                 "message" => "Успішно створено",
-                "data" => $item
+                "data" => CategoryResource::collection([$item])
             ];
         } else {
             return [
@@ -53,16 +62,9 @@ class CategoryController extends BaseController
      */
     public function show(string $id)
     {
-        $item = BlogCategory::find($id);
+        $category = $this->blogCategoryRepository->getOne($id);
 
-        if (empty($item)) {
-            return [
-                "success" => false,
-                "message" => "Запис id=[{$id}] не знайдено"
-            ];
-        }
-
-        return $item;
+        return CategoryResource::collection([$category]);
     }
 
     /**
@@ -87,7 +89,7 @@ class CategoryController extends BaseController
             return [
                 "success" => true,
                 "message" => "Успішно збережено",
-                "data" => $item
+                "data" => CategoryResource::collection([$item])
             ];
         } else {
             return [
@@ -102,16 +104,7 @@ class CategoryController extends BaseController
      */
     public function destroy(string $id)
     {
-        $item = BlogCategory::find($id);
-
-        if (empty($item)) {
-            return [
-                "success" => false,
-                "message" => "Запис id=[{$id}] не знайдено"
-            ];
-        }
-
-        $result = $item->delete();
+        $result = BlogPost::destroy($id);
 
         if ($result) {
             return [

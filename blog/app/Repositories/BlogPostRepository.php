@@ -12,7 +12,7 @@ class BlogPostRepository extends CoreRepository
 {
     protected function getModelClass()
     {
-        return Model::class; //абстрагування моделі BlogCategory, для легшого створення іншого репозиторія
+        return Model::class;
     }
 
     /**
@@ -58,7 +58,7 @@ class BlogPostRepository extends CoreRepository
         $sortBy = $filters['sort_by'] ?? 'id';
         $sortDir = strtolower($filters['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
-        if ($sortBy === 'author') {
+        if ($sortBy === 'author_name') {
             $query->join('users', 'blog_posts.user_id', '=', 'users.id')
                 ->orderBy('users.name', $sortDir);
         } elseif (in_array($sortBy, ['id', 'published_at'])) {

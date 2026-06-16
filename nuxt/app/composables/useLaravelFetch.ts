@@ -1,4 +1,3 @@
-// composables/useLaravelFetch.ts
 import type { UseFetchOptions } from 'nuxt/app'
 
 export function useLaravelFetch<T>(url: string | () => string, options: UseFetchOptions<T> = {}) {
@@ -15,9 +14,6 @@ export function useLaravelFetch<T>(url: string | () => string, options: UseFetch
       options.headers = options.headers || {}
       // @ts-expect-error - ігноруємо помилку типізації для заголовків
       options.headers.Accept = 'application/json'
-
-      // У майбутньому тут можна додати токен авторизації:
-      // options.headers.Authorization = `Bearer ${token}`
     }
   })
 }

@@ -2,34 +2,34 @@
 
 namespace App\Http\Controllers\Api\Blog\Admin;
 
+use App\Http\Resources\Api\Blog\Admin\PostIndexResource;
+use Illuminate\Http\Request;
 use App\Models\BlogPost;
 use App\Http\Resources\Api\Blog\Admin\PostResource;
 use App\Http\Requests\BlogPostCreateRequest;
 use App\Http\Requests\BlogPostUpdateRequest;
 use App\Jobs\BlogPostAfterCreateJob;
 use App\Jobs\BlogPostAfterDeleteJob;
-use App\Repositories\BlogCategoryRepository;
 use App\Repositories\BlogPostRepository;
 
 
 class PostController extends BaseController
 {
     public function __construct(
-        private BlogPostRepository $blogPostRepository,
-        private BlogCategoryRepository $blogCategoryRepository)
+        private BlogPostRepository $blogPostRepository)
     {
         //parent::__construct();
     }
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Отримуємо пагіновані дані з репозиторія
-        $paginator = $this->blogPostRepository->getAllWithPaginate();
+        $filters = $request->only(['search', 'sort_by', 'sort_dir', 'per_page']);
 
-        // Обгортаємо пагінацію в API Ресурс
-        return PostResource::collection($paginator);
+        $paginator = $this->blogPostRepository->getAllWithPaginate(filters: $filters);
+
+        return PostIndexResource::collection($paginator);
     }
 
     /**
@@ -37,16 +37,16 @@ class PostController extends BaseController
      */
     public function store(BlogPostCreateRequest  $request)
     {
-        $data = $request->input(); //отримаємо масив даних, які надійшли з форми
+        $data = $request->input();
 
-        $item = BlogPost::create($data); //створюємо об'єкт і додаємо в БД
+        $item = BlogPost::create($data);
 
         if ($item) {
             BlogPostAfterCreateJob::dispatch($item);
             return [
                 "success" => true,
                 "message" => "Пост успішно створено",
-                "item" => $item
+                "item" => PostResource::collection([$item])
             ];
         } else {
             return [
@@ -61,13 +61,9 @@ class PostController extends BaseController
      */
     public function show(string $id)
     {
-        $item = BlogPost::find($id);
+        $post = $this->blogPostRepository->getOne($id);
 
-        if (empty($item)) {
-            return ["message" => "Пост id=[{$id}] не знайдено"];
-        }
-
-        return $item;
+        return new PostResource($post);
     }
 
     /**
@@ -76,19 +72,23 @@ class PostController extends BaseController
     public function update(BlogPostUpdateRequest $request, string $id)
     {
         $item = $this->blogPostRepository->getEdit($id);
-        if (empty($item)) { //якщо ід не знайдено
-            return ["message" => "Запис id=[{$id}] не знайдено"];
+
+        if (empty($item)) {
+            return [
+                "success" => false,
+                "message" => "Запис id=[{$id}] не знайдено"
+            ];
         }
 
-        $data = $request->all(); //отримаємо масив даних, які надійшли з форми
+        $data = $request->all();
 
-        $result = $item->update($data); //оновлюємо дані об'єкта і зберігаємо в БД
+        $result = $item->update($data);
 
         if ($result) {
             return [
                 "success" => true,
                 "message" => "Пост успішно збережено",
-                "item" => $item
+                "item" => PostResource::collection([$item])
             ];
         } else {
             return [
@@ -103,7 +103,7 @@ class PostController extends BaseController
      */
     public function destroy(string $id)
     {
-        $result = BlogPost::destroy($id); //софт деліт, запис лишається
+        $result = BlogPost::destroy($id);
 
         //$result = BlogPost::find($id)->forceDelete(); //повне видалення з БД
 

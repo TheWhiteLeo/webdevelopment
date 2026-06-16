@@ -2,7 +2,7 @@
   <div class="w-full space-y-4 pb-4">
     <div class="flex items-center justify-between gap-4 px-4 py-3.5 border-b border-accented">
       <UInput
-        v-model="globalFilter"
+        v-model="search"
         class="max-w-sm w-64"
         placeholder="Пошук по ID, Автору, Заголовку..."
         icon="i-heroicons-magnifying-glass-20-solid"
@@ -13,7 +13,7 @@
         :content="{ align: 'end' }"
       >
         <UButton
-          :label="`Показувати: ${selectedPerPage}`"
+          :label="`Показувати: ${itemsPerPage}`"
           color="neutral"
           variant="outline"
           trailing-icon="i-lucide-chevron-down"
@@ -23,17 +23,31 @@
     </div>
 
     <UTable
-      v-model:sorting="sorting"
-      :data="currentPagePosts"
-      :columns="columns"
+      ref="table"
+      :columns="columns as any"
+      :data="posts"
+      sort-mode="manual"
+      v-model:sort="sort"
       :loading="pending"
       class="flex-1"
-    />
+      @select="onRowSelect"
+    >
+      <template v-if="isAdmin" #actions-cell="{ row }">
+        <UDropdownMenu :items="getDropdownActions(row.original)">
+          <UButton
+            icon="i-lucide-ellipsis-vertical"
+            color="neutral"
+            variant="ghost"
+            aria-label="Дії"
+          />
+        </UDropdownMenu>
+      </template>
+    </UTable>
 
-    <div class="flex justify-end pt-4 px-4 border-t border-default">
+    <div class="flex justify-end border-t border-default pt-4 px-4">
       <UPagination
-        v-model:page="currentPage"
-        :items-per-page="perPage"
+        v-model:page="page"
+        :items-per-page="itemsPerPage"
         :total="total"
       />
     </div>
@@ -41,46 +55,33 @@
 </template>
 
 <script setup lang="ts">
-import { h, resolveComponent, computed, ref, watch } from 'vue'
-import { refDebounced } from '@vueuse/core'
-import type { TableColumn } from '@nuxt/ui'
-
-import type { Post } from '~/types/Post'
-import type { LaravelPaginatedResponse } from '~/types/LaravelPaginatedResponse'
+import { resolveComponent, computed, h } from 'vue'
+import type { TableColumn, DropdownMenuItem } from '@nuxt/ui'
+import type { PostIndex } from '~/types/PostIndex'
 
 const UButton = resolveComponent('UButton')
 
-const currentPage = ref(1)
-
-const globalFilter = ref('')
-const debouncedSearch = refDebounced(globalFilter, 500)
-
-const selectedPerPage = ref(25)
-
-const sorting = ref([{ id: 'id', desc: true }])
-
-
-const apiQuery = computed(() => {
-  const sortCol = sorting.value[0]
-
-  return {
-    page: currentPage.value,
-    per_page: selectedPerPage.value,
-    search: debouncedSearch.value,
-    sort_by: sortCol?.id || 'id',
-    sort_dir: sortCol?.desc ? 'desc' : 'asc'
-  }
+const props = withDefaults(defineProps<{
+  posts: PostIndex[]
+  total: number
+  pending: boolean
+  isAdmin?: boolean
+  rowLinkPrefix?: string
+}>(), {
+  isAdmin: false,
+  rowLinkPrefix: '/blog-posts'
 })
 
-
-const { data: response, pending } = await useLaravelFetch<LaravelPaginatedResponse>('/blog/posts', {
-  query: apiQuery
+const search = defineModel<string>('search', { default: '' })
+const page = defineModel<number>('page', { default: 1 })
+const itemsPerPage = defineModel<number>('itemsPerPage', { default: 25 })
+const sort = defineModel<{ id: string; desc: boolean }[]>('sort', {
+  default: () => [{ id: 'id', desc: true }]
 })
 
-const currentPagePosts = computed<Post[]>(() => response.value?.data || [])
-const total = computed<number>(() => response.value?.total || 0)
-const perPage = computed<number>(() => response.value?.per_page || 25)
-
+const emit = defineEmits<{
+  (e: 'delete', id: string | number): void
+}>()
 
 const perPageOptions = [10, 20, 25, 50, 100]
 
@@ -88,91 +89,82 @@ const perPageItems = computed(() => {
   return perPageOptions.map(value => ({
     label: `${value} записів`,
     type: 'checkbox' as const,
-    checked: selectedPerPage.value === value,
+    checked: itemsPerPage.value === value,
     onUpdateChecked(checked: boolean) {
       if (checked) {
-        selectedPerPage.value = value
+        itemsPerPage.value = value
       }
     }
   }))
 })
 
+const renderSortableHeader = (label: string, columnId: string) => {
+  const currentSort = sort.value[0]
+  const isCurrentColumn = currentSort?.id === columnId
 
-const renderSortableHeader = (label: string, column: any) => {
-  const isSorted = column.getIsSorted()
+  let icon = 'i-lucide-arrow-up-down'
+  if (isCurrentColumn) {
+    icon = currentSort.desc
+      ? 'i-lucide-arrow-down-wide-narrow'
+      : 'i-lucide-arrow-up-narrow-wide'
+  }
 
   return h(UButton, {
     color: 'neutral',
     variant: 'ghost',
     label: label,
-
-    icon: isSorted
-      ? isSorted === 'asc'
-        ? 'i-lucide-arrow-up-narrow-wide'
-        : 'i-lucide-arrow-down-wide-narrow'
-      : 'i-lucide-arrow-up-down',
+    icon: icon,
     class: '-mx-2.5',
-
-    onClick: () => column.toggleSorting(column.getIsSorted() === 'asc')
+    onClick: () => {
+      if (isCurrentColumn) {
+        sort.value = [{ id: columnId, desc: !currentSort.desc }]
+      } else {
+        sort.value = [{ id: columnId, desc: false }]
+      }
+    }
   })
 }
 
-
-watch([debouncedSearch, selectedPerPage, sorting], () => {
-  currentPage.value = 1
-}, { deep: true })
-
-
-const columns: TableColumn<Post>[] = [
-  {
-    accessorKey: 'id',
-    header: ({ column }) => renderSortableHeader('#', column),
-  },
-  {
-    accessorKey: 'user.name',
-    id: 'author',
-    header: ({ column }) => renderSortableHeader('Автор', column),
-  },
-  {
-    accessorKey: 'category.title',
-    header: 'Категорія',
-    enableSorting: false
-  },
-  {
-    accessorKey: 'title',
-    header: 'Заголовок',
-    enableSorting: false
-  },
-  {
-    accessorKey: 'published_at',
-    header: ({ column }) => renderSortableHeader('Дата публікації', column),
-  },
-  {
-    id: 'actions',
-    header: 'Дії',
-    enableSorting: false,
-    cell: ({ row }) => {
-      const postId = row.original.id
-      return h('div', { class: 'flex items-center gap-2' }, [
-        h(UButton, {
-          to: `/BlogPosts/${postId}`,
-          target: '_blank',
-          color: 'gray',
-          variant: 'soft',
-          size: 'xs',
-          icon: 'i-heroicons-eye',
-          label: 'View'
-        }),
-        h(UButton, {
-          to: `/admin/blog/posts/${postId}/edit`,
-          color: 'primary',
-          variant: 'soft',
-          size: 'xs',
-          icon: 'i-heroicons-pencil-square',
-          label: 'Edit'
-        })
-      ])
-    }
-  }
+const baseColumns: TableColumn<PostIndex>[] = [
+  { accessorKey: 'id', header: () => renderSortableHeader('#', 'id') },
+  { accessorKey: 'author_name', header: () => renderSortableHeader('Автор', 'author_name') },
+  { accessorKey: 'category_title', header: 'Категорія' },
+  { accessorKey: 'title', header: 'Заголовок' },
+  { accessorKey: 'published_at', header: () => renderSortableHeader('Дата публікації', 'published_at') }
 ]
+
+const columns = computed(() => {
+  if (props.isAdmin) {
+    return [...baseColumns, { id: 'actions' } as TableColumn<PostIndex>]
+  }
+  return baseColumns
+})
+
+function onRowSelect(_e: Event, row: { original: PostIndex }) {
+  navigateTo(`${props.rowLinkPrefix}/${row.original.id}`)
+}
+
+function getDropdownActions(post: PostIndex): DropdownMenuItem[][] {
+  return [
+    [
+      {
+        label: 'Редагувати',
+        icon: 'i-lucide-edit',
+        onSelect: () => navigateTo({ path: `/admin/blog-posts/${post.id}`, query: { edit: 'true' } })
+      }
+    ],
+    [
+      {
+        label: 'Видалити',
+        icon: 'i-lucide-trash',
+        color: 'error',
+        onSelect: () => {
+          if (confirm(`Ви впевнені, що хочете видалити пост "${post.title}"?`)) {
+            emit('delete', post.id)
+          }
+        }
+      }
+    ]
+  ]
+}
 </script>
