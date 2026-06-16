@@ -100,7 +100,9 @@ import { z } from 'zod'
 import type { PostDetail } from '~/types/PostIndex'
 
 const postSchema = z.object({
-  title: z.string().min(5, 'Заголовок обов\'язковий').max(200, 'Максимум 200 символів'),
+  title: z.string({ required_error: 'Назва обов\'язкова' })
+  .min(5, 'Мінімум 5 символів')
+  .max(200, 'Максимум 200 символів'),
   content_raw: z.string().min(5, 'Текст поста обов\'язковий').max(10000, 'Максимум 10000 символів'),
   category_id: z.union([z.string(), z.number()]).refine(val => val !== '' && val !== null && val !== undefined, 'Оберіть категорію'),
   is_published: z.boolean()

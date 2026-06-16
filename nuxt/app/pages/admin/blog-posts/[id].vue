@@ -5,14 +5,22 @@
       <USwitch v-model="editMode" label="Режим редагування" />
     </div>
 
+    <div v-if="pendingPost" class="flex justify-center py-12">
+      <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-gray-400" />
+    </div>
+
     <PostsDetailCard
-      v-if="post"
+      v-else-if="post"
       :post="post"
       :is-editable="editMode"
       :categories="categories"
       :loading-dependencies="loadingDependencies"
       @save="handleSave"
     />
+
+    <div v-else class="text-center py-12 text-gray-500">
+      Не вдалося завантажити дані поста. Можливо, він був видалений або виникла помилка сервера.
+    </div>
   </div>
 </template>
 

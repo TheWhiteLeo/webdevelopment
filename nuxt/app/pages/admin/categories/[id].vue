@@ -12,51 +12,15 @@
       <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-gray-400" />
     </div>
 
-    <UCard v-else-if="category">
-      <UForm :state="form" @submit="onSubmit" class="space-y-6">
-
-        <template v-if="editMode">
-          <UFormField name="title" label="Назва категорії">
-            <UInput v-model="form.title" placeholder="Введіть назву..." />
-          </UFormField>
-
-          <UFormField name="parent_id" label="Батьківська категорія">
-            <USelectMenu
-              v-model="form.parent_id"
-              :items="filteredCategoriesList"
-              value-key="id"
-              placeholder="Оберіть батьківську категорію"
-              :loading="loadingParentCategories"
-              clearable
-            />
-          </UFormField>
-
-          <div class="flex justify-end pt-4">
-            <UButton type="submit" color="success" icon="i-lucide-check" label="Зберегти зміни" :loading="isSubmitting" />
-          </div>
-        </template>
-
-        <template v-else>
-          <div class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-500 mb-1">ID категорії</label>
-              <div class="text-gray-900 font-mono">{{ category.id }}</div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-500 mb-1">Назва</label>
-              <div class="text-xl font-medium text-gray-900">{{ category.title }}</div>
-            </div>
-
-            <div v-if="category.parent_category">
-              <label class="block text-sm font-medium text-gray-500 mb-1">Батьківська категорія</label>
-              <UBadge color="primary" variant="subtle">{{ category.parent_category }}</UBadge>
-            </div>
-          </div>
-        </template>
-
-      </UForm>
-    </UCard>
+    <CategoriesDetailCard
+      v-else-if="category"
+      :category="category"
+      :is-editable="editMode"
+      :parent-categories="filteredCategoriesList"
+      :loading-dependencies="loadingParentCategories"
+      :is-submitting="isSubmitting"
+      @save="handleSave"
+    />
 
     <div v-else class="text-center py-12 text-gray-500">
       Категорію не знайдено.
@@ -65,88 +29,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { Category } from '~/types/Category'
 
 const route = useRoute()
+const router = useRouter()
 const config = useRuntimeConfig()
 
-// Перевіряємо чи перейшли ми на сторінку одразу з наміром редагувати
+// Стан сторінки
 const editMode = ref(route.query.edit === 'true')
 const isSubmitting = ref(false)
 
+// 1. Отримання даних поточної категорії
 const { data: categoryResponse, pending: pendingCategory, refresh: refreshCategory } = await useLaravelFetch<any>(`/admin/blog/categories/${route.params.id}`)
 
 const category = computed<Category | null>(() => {
   if (!categoryResponse.value) return null
-
   const rawData = categoryResponse.value.data ? categoryResponse.value.data : categoryResponse.value
-
-  if (Array.isArray(rawData)) {
-    return rawData[0] || null
-  }
-
-  return rawData
+  return Array.isArray(rawData) ? (rawData[0] || null) : rawData
 })
 
-const form = reactive({
-  title: '',
-  parent_id: null as string | number | null
-})
-
-watch(category, (newVal) => {
-  if (newVal) {
-    form.title = newVal.title
-    form.parent_id = newVal.parent_id || null
-  }
-}, { immediate: true })
-
-// 2. Отримуємо список для випадайки (тільки якщо ввімкнено режим редагування)
+// 2. Отримання залежностей (категорії для випадаючого списку)
 const { data: parentCategoriesResponse, pending: loadingParentCategories, execute: fetchParents } = useLaravelFetch('/admin/blog/categories', {
-  immediate: editMode.value,
+  immediate: editMode.value, // Завантажуємо одразу, якщо зайшли через ?edit=true
   query: { nopaginate: true }
 })
 
+// Підтягуємо залежності, якщо користувач увімкнув тумблер редагування
 watch(editMode, async (isNowEditable) => {
   if (isNowEditable && !parentCategoriesResponse.value) {
     await fetchParents()
   }
 })
 
-// Форматуємо список та прибираємо поточну категорію (щоб вона не стала батьківською для самої себе)
+// Форматуємо дані для селекта, прибираючи саму себе
 const filteredCategoriesList = computed(() => {
   if (!parentCategoriesResponse.value) return []
   const rawData = Array.isArray(parentCategoriesResponse.value)
     ? parentCategoriesResponse.value
-    : parentCategoriesResponse.value.data
+    : (parentCategoriesResponse.value as any).data
 
   return rawData
     .filter((cat: any) => String(cat.id) !== String(route.params.id))
-    .map((cat: any) => ({
-      id: cat.id,
-      label: cat.title
-    }))
+    .map((cat: any) => ({ id: cat.id, label: cat.title }))
 })
 
-// 3. Збереження
-const onSubmit = async () => {
-  if (!form.title) return alert('Назва обов\'язкова')
-
+// 3. Збереження даних (обробник події @save від компонента)
+const handleSave = async (updatedCategory: Category) => {
   isSubmitting.value = true
   try {
     await $fetch(`/admin/blog/categories/${route.params.id}`, {
       baseURL: config.public.laravelUrl,
       method: 'PUT',
-      body: form,
+      body: {
+        title: updatedCategory.title,
+        parent_id: updatedCategory.parent_id
+      },
       headers: { Accept: 'application/json' }
     })
 
-    await refreshCategory()
-    editMode.value = false
+    await refreshCategory() // Оновлюємо дані на сторінці після збереження
+    editMode.value = false // Вимикаємо режим редагування
 
-    // Прибираємо query параметр ?edit=true з URL
-    const router = useRouter()
+    // Очищуємо URL
     router.replace({ query: {} })
   } catch (error) {
     console.error(error)

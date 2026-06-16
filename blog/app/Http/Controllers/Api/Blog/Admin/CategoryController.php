@@ -22,16 +22,12 @@ class CategoryController extends BaseController
      */
     public function index(Request $request)
     {
-        $filters = $request->only(['nopaginate']);
-        if ($filters['nopaginate']) {
-            $categories = $this->blogCategoryRepository->getForComboBox();
+        $filters = $request->only(['search', 'sort_by', 'sort_dir', 'per_page', 'nopaginate']);
 
-            return CategoryResource::collection($categories);
-        } else {
-            $paginator = $this->blogCategoryRepository->getAllWithPaginate(5);
+        // Репозиторій тепер сам визначає, чи повертати колекцію (nopaginate) чи пагінатор
+        $result = $this->blogCategoryRepository->getAllWithPaginate($filters);
 
-            return  CategoryResource::collection($paginator);
-        }
+        return CategoryResource::collection($result);
     }
 
     /**
@@ -104,7 +100,7 @@ class CategoryController extends BaseController
      */
     public function destroy(string $id)
     {
-        $result = BlogPost::destroy($id);
+        $result = BlogCategory::destroy($id);
 
         if ($result) {
             return [
